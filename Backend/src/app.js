@@ -7,7 +7,11 @@ import connectDb from './config/database.js';
 
 const app = express();
 
-connectDb();
+// Middleware to ensure DB is connected before handling requests
+app.use(async (req, res, next) => {
+    await connectDb();
+    next();
+});
 
 app.use(cookieParser());
 app.use(cors({
