@@ -1,31 +1,32 @@
 import express from 'express';
 import authRouter from './routes/auth.routes.js';
 import cookieParser from 'cookie-parser';
-import cors from 'cors';
 import { interviewRouter } from './routes/interview.routes.js';
 import connectDb from './config/database.js';
 
 const app = express();
 
-// 1. CORS MUST be the VERY FIRST middleware so preflight OPTIONS and error responses return CORS headers
-app.use(cors({
-    origin: function (origin, callback) {
-        // Echo back the requesting origin to satisfy credentials: true
-        callback(null, origin || true);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
-}));
+// Custom manual CORS middleware to ensure headers are ALWAYS set on all responses (including errors & serverless cold starts)
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cookie');
 
-// Handle preflight requests globally
-app.options('*', cors());
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    next();
+});
 
-// 2. Cookie & JSON Parsers
 app.use(cookieParser());
 app.use(express.json());
 
-// 3. Database Connection Middleware
 app.use(async (req, res, next) => {
     try {
         await connectDb();
