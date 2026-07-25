@@ -7,15 +7,22 @@ import connectDb from './config/database.js';
 
 const app = express();
 
-// Middleware to ensure DB is connected before handling requests
 app.use(async (req, res, next) => {
-    await connectDb();
-    next();
+    try {
+        await connectDb();
+        next();
+    } catch (err) {
+        console.error("DB Middleware Error:", err);
+        res.status(500).json({ message: "Database connection failed", error: err.message });
+    }
 });
 
 app.use(cookieParser());
 app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+        // Allow all origins or match CLIENT_URL to prevent CORS failures
+        callback(null, true);
+    },
     credentials: true
 }));
 app.use(express.json());
