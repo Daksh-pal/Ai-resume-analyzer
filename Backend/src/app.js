@@ -7,6 +7,25 @@ import connectDb from './config/database.js';
 
 const app = express();
 
+// 1. CORS MUST be the VERY FIRST middleware so preflight OPTIONS and error responses return CORS headers
+app.use(cors({
+    origin: function (origin, callback) {
+        // Echo back the requesting origin to satisfy credentials: true
+        callback(null, origin || true);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+}));
+
+// Handle preflight requests globally
+app.options('*', cors());
+
+// 2. Cookie & JSON Parsers
+app.use(cookieParser());
+app.use(express.json());
+
+// 3. Database Connection Middleware
 app.use(async (req, res, next) => {
     try {
         await connectDb();
@@ -16,28 +35,6 @@ app.use(async (req, res, next) => {
         res.status(500).json({ message: "Database connection failed", error: err.message });
     }
 });
-
-app.use(cookieParser());
-
-const allowedOrigins = [
-    process.env.CLIENT_URL,
-    "http://localhost:5173",
-];
-
-app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-            callback(null, true);
-        } else {
-            callback(null, true); // Fallback allow for Vercel preview deployments
-        }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
-}));
-
-app.use(express.json());
 
 app.get("/", (req, res) => {
     res.json({ status: "OK", message: "AI Resume Analyzer API is running" });
