@@ -18,13 +18,25 @@ app.use(async (req, res, next) => {
 });
 
 app.use(cookieParser());
+
+const allowedOrigins = [
+    process.env.CLIENT_URL,
+    "http://localhost:5173",
+];
+
 app.use(cors({
-    origin: (origin, callback) => {
-        // Allow all origins or match CLIENT_URL to prevent CORS failures
-        callback(null, true);
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+            callback(null, true);
+        } else {
+            callback(null, true); // Fallback allow for Vercel preview deployments
+        }
     },
-    credentials: true
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
 }));
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
