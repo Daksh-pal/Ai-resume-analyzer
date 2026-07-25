@@ -1,9 +1,8 @@
 import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const pdfParseModule = require('pdf-parse');
-const PDFParse = pdfParseModule.PDFParse || pdfParseModule;
 import { generateInterviewReport } from "../services/ai.service.js";
 import { InterviewReport } from "../models/interviewReport.js";
+
+const require = createRequire(import.meta.url);
 
 export const generateInterviewController = async (req, res) => {
     try {
@@ -11,13 +10,22 @@ export const generateInterviewController = async (req, res) => {
         let resumeText = "";
 
         if (resumeFile && resumeFile.buffer) {
-            const parser = typeof PDFParse === 'function' && PDFParse.prototype ? new PDFParse(new Uint8Array(resumeFile.buffer)) : null;
-            if (parser && typeof parser.getText === 'function') {
-                const parsedData = await parser.getText();
-                resumeText = typeof parsedData === 'string' ? parsedData : (parsedData?.text || "");
-            } else if (typeof pdfParseModule === 'function') {
-                const parsedPdf = await pdfParseModule(resumeFile.buffer);
-                resumeText = parsedPdf.text || "";
+            try {
+                const pdfParseModule = require('pdf-parse');
+                const PDFParse = pdfParseModule.PDFParse || pdfParseModule;
+                
+                if (typeof PDFParse === 'function' && PDFParse.prototype) {
+                    const parser = new PDFParse(new Uint8Array(resumeFile.buffer));
+                    if (typeof parser.getText === 'function') {
+                        const parsedData = await parser.getText();
+                        resumeText = typeof parsedData === 'string' ? parsedData : (parsedData?.text || "");
+                    }
+                } else if (typeof pdfParseModule === 'function') {
+                    const parsedPdf = await pdfParseModule(resumeFile.buffer);
+                    resumeText = parsedPdf.text || "";
+                }
+            } catch (pdfErr) {
+                console.error("PDF Parsing error:", pdfErr);
             }
         }
 
