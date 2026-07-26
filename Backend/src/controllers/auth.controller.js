@@ -3,6 +3,12 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { tokenBlacklist } from "../models/tokenBlacklisting.js";
 
+const getCookieOptions = () => ({
+    httpOnly: true,
+    secure: true,
+    sameSite: "none"
+});
+
 export const registerUser = async (req,res) => {
     const {username , email , password} = req.body;
     if(!username || !email || !password){
@@ -27,7 +33,7 @@ export const registerUser = async (req,res) => {
 
     const token = jwt.sign({id: user._id , username : user.username},process.env.SECRET_KEY,{expiresIn:"1h"});
 
-    res.cookie("token",token);
+    res.cookie("token", token, getCookieOptions());
 
     res.status(201).json({
         message:"User registered successfully",
@@ -59,7 +65,7 @@ export const loginUser = async (req,res) => {
 
     const token = jwt.sign({id: userExists._id , username : userExists.username},process.env.SECRET_KEY,{expiresIn:"1h"});
 
-    res.cookie("token",token);
+    res.cookie("token", token, getCookieOptions());
 
     res.status(201).json({
         message: "User logged in Successfully",
@@ -80,7 +86,7 @@ export const logoutUser = async(req,res) => {
         })
     }
 
-    res.clearCookie("token");
+    res.clearCookie("token", getCookieOptions());
     res.status(201).json({message : "User logged out successfully"});
 }
 
