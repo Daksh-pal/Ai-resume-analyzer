@@ -7,11 +7,13 @@ import connectDb from './config/database.js';
 
 const app = express();
 
-// 1. CORS with wildcard origin dynamic reflector
+// Sanitize origin string strictly (strip any trailing slashes)
 app.use(
     cors({
         origin: function (origin, callback) {
-            callback(null, origin || true);
+            if (!origin) return callback(null, true);
+            const cleanOrigin = origin.replace(/\/$/, "");
+            callback(null, cleanOrigin);
         },
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
