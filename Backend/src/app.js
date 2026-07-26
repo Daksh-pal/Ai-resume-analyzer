@@ -7,32 +7,14 @@ import connectDb from './config/database.js';
 
 const app = express();
 
-// Sanitize origin string strictly (strip any trailing slashes)
-app.use(
-    cors({
-        origin: function (origin, callback) {
-            if (!origin) return callback(null, true);
-            const cleanOrigin = origin.replace(/\/$/, "");
-            callback(null, cleanOrigin);
-        },
-        credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Cookie"]
-    })
-);
+connectDb();
 
 app.use(cookieParser());
+app.use(cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true
+}));
 app.use(express.json());
-
-app.use(async (req, res, next) => {
-    try {
-        await connectDb();
-        next();
-    } catch (err) {
-        console.error("DB Middleware Error:", err);
-        res.status(500).json({ message: "Database connection failed", error: err.message });
-    }
-});
 
 app.get("/", (req, res) => {
     res.json({ status: "OK", message: "AI Resume Analyzer API is running" });
